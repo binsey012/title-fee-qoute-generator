@@ -3,12 +3,6 @@ import CalculationTable from './CalculationTable'
 import { BuildingIcon, ChevronIcon } from './icons'
 
 export default function BuyerSheet({ result }) {
-  if (!result) return <EmptyState />
-
-  const { buyer, salesPrice, loanAmount, downPayment, earnestMoneyDeposit, propertyLocation, closingDate, transactionType, loanType } = result
-  const bd = buyer.breakdown
-  const sections = buyer.sectionTotals || {}
-  const credits = buyer.creditsBreakdown || {}
   const [open, setOpen] = useState({
     loans: false,
     taxes: false,
@@ -16,6 +10,13 @@ export default function BuyerSheet({ result }) {
     credits: false,
     recording: false,
   })
+
+  if (!result) return <EmptyState />
+
+  const { buyer, salesPrice, loanAmount, downPayment, earnestMoneyDeposit, propertyLocation, closingDate, transactionType, loanType } = result
+  const bd = buyer.breakdown
+  const sections = buyer.sectionTotals || {}
+  const credits = buyer.creditsBreakdown || {}
 
   const toggle = (key) => setOpen((prev) => ({ ...prev, [key]: !prev[key] }))
 

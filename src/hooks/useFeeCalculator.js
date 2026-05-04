@@ -92,12 +92,12 @@ export function useFeeCalculator() {
       if (field === 'salesPrice') {
         // Re-derive down payment dollar if pct already set
         if (prev.downPaymentPct) {
-          const pct = parseFloat(prev.downPaymentPct) / 100
+          const pct = Math.min(1, Math.max(0, parseFloat(prev.downPaymentPct) / 100 || 0))
           const dp = sp * pct
           next.downPayment = fmtDollar(dp)
           next.loanAmount = fmtDollar(sp - dp)
         } else if (prev.downPayment) {
-          const dp = parseDollar(prev.downPayment)
+          const dp = Math.min(sp, Math.max(0, parseDollar(prev.downPayment)))
           next.loanAmount = fmtDollar(sp - dp)
           next.downPaymentPct = sp > 0 ? fmtPercent((dp / sp) * 100) : ''
         }
@@ -112,7 +112,7 @@ export function useFeeCalculator() {
           next.downPaymentPct = sp > 0 ? '100' : ''
         } else if (next.loanType === 'cash') {
           next.loanType = 'conventional'
-          const dp = parseDollar(next.downPayment)
+          const dp = Math.min(sp, Math.max(0, parseDollar(next.downPayment)))
           next.loanAmount = fmtDollar(Math.max(0, sp - dp))
           next.downPaymentPct = sp > 0 ? fmtPercent((dp / sp) * 100) : ''
         }
@@ -126,28 +126,30 @@ export function useFeeCalculator() {
           next.downPaymentPct = sp > 0 ? '100' : ''
         } else if (next.transactionType === 'sale_purchase_cash') {
           next.transactionType = 'sale_purchase_mortgage'
-          const dp = parseDollar(next.downPayment)
+          const dp = Math.min(sp, Math.max(0, parseDollar(next.downPayment)))
           next.loanAmount = fmtDollar(Math.max(0, sp - dp))
           next.downPaymentPct = sp > 0 ? fmtPercent((dp / sp) * 100) : ''
         }
       }
 
       if (field === 'downPayment' && sp > 0) {
-        const dp = parseDollar(value)
+        const dp = Math.min(sp, Math.max(0, parseDollar(value)))
         next.downPaymentPct = dp > 0 ? fmtPercent((dp / sp) * 100) : ''
         next.loanAmount = fmtDollar(sp - dp)
       }
 
       if (field === 'downPaymentPct' && sp > 0) {
-        const pct = parseFloat(value) / 100
+        const pct = Math.min(1, Math.max(0, parseFloat(value) / 100 || 0))
         const dp = sp * pct
+        next.downPaymentPct = value === '' ? '' : fmtPercent(pct * 100)
         next.downPayment = fmtDollar(dp)
         next.loanAmount = fmtDollar(sp - dp)
       }
 
       if (field === 'loanAmount' && sp > 0) {
-        const loan = parseDollar(value)
+        const loan = Math.min(sp, Math.max(0, parseDollar(value)))
         const dp = sp - loan
+        next.loanAmount = fmtDollar(loan)
         next.downPayment = fmtDollar(dp)
         next.downPaymentPct = sp > 0 ? fmtPercent((dp / sp) * 100) : ''
       }
