@@ -72,7 +72,7 @@ function Toggle({ checked, onChange }) {
       onClick={onChange}
       style={{
         width: '36px', height: '20px', borderRadius: '999px',
-        background: checked ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : 'rgba(148,163,184,0.2)',
+        background: checked ? 'linear-gradient(135deg, var(--accent-brown), var(--accent-green))' : 'rgba(148,163,184,0.2)',
         border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0,
       }}
     >
@@ -91,7 +91,7 @@ function SectionHeader() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
       <div className="sheet-icon-wrap">
-        <ReceiptIcon size={18} color="#60a5fa" />
+        <ReceiptIcon size={18} color="var(--accent-green-bright)" />
       </div>
       <div>
         <h3 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.05rem' }}>Title &amp; Escrow Fee Estimate</h3>
@@ -105,7 +105,7 @@ function EmptyState() {
   return (
     <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
       <div className="sheet-icon-wrap" style={{ width: '52px', height: '52px', margin: '0 auto 12px' }}>
-        <ReceiptIcon size={24} color="#60a5fa" />
+        <ReceiptIcon size={24} color="var(--accent-green-bright)" />
       </div>
       <p style={{ fontSize: '0.9rem' }}>Enter a sales price to generate the fee estimate.</p>
     </div>

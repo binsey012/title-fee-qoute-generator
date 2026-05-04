@@ -154,7 +154,7 @@ function SectionHeader({ title, subtitle }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
       <div className="sheet-icon-wrap">
-        <BuildingIcon size={18} color="#60a5fa" />
+        <BuildingIcon size={18} color="var(--accent-green-bright)" />
       </div>
       <div>
         <h3 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.05rem' }}>{title}</h3>
@@ -183,7 +183,7 @@ function EmptyState() {
   return (
     <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
       <div className="sheet-icon-wrap" style={{ width: '52px', height: '52px', margin: '0 auto 12px' }}>
-        <BuildingIcon size={24} color="#60a5fa" />
+        <BuildingIcon size={24} color="var(--accent-green-bright)" />
       </div>
       <p style={{ fontSize: '0.9rem' }}>Enter a sales price to generate the buyer's close sheet.</p>
     </div>

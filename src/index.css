@@ -3,14 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --bg-deep: #060d1a;
-  --bg-panel: rgba(15, 23, 42, 0.55);
-  --border-glass: rgba(148, 163, 184, 0.12);
-  --accent-blue: #3b82f6;
-  --accent-blue-bright: #60a5fa;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
+  --bg-deep: #ffffff;
+  --bg-panel: rgba(255, 255, 255, 0.82);
+  --border-glass: rgba(16, 100, 57, 0.15);
+  --accent-green: #14a44d;
+  --accent-green-dark: #0b7f3b;
+  --accent-green-bright: #56c271;
+  --accent-brown: #6b4f3b;
+  --text-primary: #113322;
+  --text-secondary: #2f6548;
+  --text-muted: #6d8f7b;
   --green: #22c55e;
   --red: #ef4444;
 }
@@ -24,11 +26,35 @@
 body {
   background-color: var(--bg-deep);
   background-image:
-    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59, 130, 246, 0.15) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 40% at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
+    radial-gradient(ellipse 70% 50% at 50% -5%, rgba(20, 164, 77, 0.12) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 40% at 90% 80%, rgba(11, 127, 59, 0.1) 0%, transparent 60%),
+    linear-gradient(180deg, #fbfefc 0%, #f4fbf6 100%);
   min-height: 100vh;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color: var(--text-primary);
+}
+
+.app-shell {
+  overflow-x: hidden;
+}
+
+.brand-logo-box {
+  height: 44px;
+  width: 100px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(20, 164, 77, 0.18);
+  box-shadow: 0 8px 26px rgba(20, 164, 77, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+}
+
+.brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* Glass card utility */
@@ -38,11 +64,12 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 16px;
+  box-shadow: 0 14px 36px rgba(17, 51, 34, 0.08);
 }
 
 /* Input base */
 .field-input {
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid var(--border-glass);
   border-radius: 8px;
   color: var(--text-primary);
@@ -53,8 +80,8 @@ body {
   outline: none;
 }
 .field-input:focus {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.2);
 }
 .field-input::placeholder {
   color: var(--text-muted);
@@ -63,14 +90,16 @@ body {
 /* Segmented control */
 .seg-control {
   display: flex;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(255, 255, 255, 0.86);
   border: 1px solid var(--border-glass);
   border-radius: 12px;
   padding: 4px;
   gap: 4px;
+  flex-wrap: wrap;
 }
 .seg-btn {
   flex: 1;
+  min-width: 180px;
   padding: 10px 16px;
   border-radius: 9px;
   font-size: 0.82rem;
@@ -83,9 +112,9 @@ body {
   white-space: nowrap;
 }
 .seg-btn.active {
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  background: linear-gradient(135deg, var(--accent-green-dark), var(--accent-green));
   color: #fff;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 4px 15px rgba(0, 166, 81, 0.35);
 }
 .seg-btn:hover:not(.active) {
   background: rgba(148, 163, 184, 0.08);
@@ -129,8 +158,8 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  border: 1px solid rgba(96, 165, 250, 0.3);
-  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(20, 164, 77, 0.28);
+  background: rgba(20, 164, 77, 0.1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -184,7 +213,7 @@ body {
 .buyer-meta {
   color: var(--text-secondary);
   border: 1px solid var(--border-glass);
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 8px;
   padding: 4px 8px;
   font-size: 0.8rem;
@@ -204,7 +233,7 @@ body {
   align-items: center;
   padding: 16px;
   border-top: 1px solid rgba(148, 163, 184, 0.2);
-  background: linear-gradient(135deg, #0f6ea4, #0d82c0);
+  background: linear-gradient(135deg, #0b7f3b, #16a34a);
 }
 
 .buyer-total-label {
@@ -226,7 +255,7 @@ body {
   left: 0;
   right: 0;
   z-index: 20;
-  background: rgba(8, 16, 30, 0.96);
+  background: rgba(255, 255, 255, 0.98);
   border: 1px solid var(--border-glass);
   border-radius: 10px;
   overflow: hidden;
@@ -248,14 +277,14 @@ body {
 }
 
 .location-suggest-item:hover {
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(0, 166, 81, 0.16);
 }
 
 .estimate-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(2, 8, 23, 0.72);
+  background: rgba(17, 51, 34, 0.26);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -336,19 +365,84 @@ body {
 
 .secondary-action {
   border: 1px solid var(--border-glass);
-  background: rgba(148, 163, 184, 0.08);
+  background: rgba(20, 164, 77, 0.08);
   color: var(--text-secondary);
 }
 
 .primary-action {
   border: none;
-  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  background: linear-gradient(135deg, var(--accent-green-dark), var(--accent-green));
   color: #fff;
 }
 
 @media (max-width: 960px) {
   .estimate-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .app-header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .header-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .app-main-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sticky-total {
+    padding: 14px 16px;
+  }
+
+  .sticky-total > div {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  .sticky-total > div > div:last-child {
+    text-align: left !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-section {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .seg-btn {
+    min-width: 100%;
+  }
+
+  .brand-wrap {
+    width: 100%;
+    align-items: flex-start !important;
+  }
+
+  .brand-logo-box {
+    width: 84px;
+    height: 36px;
+  }
+
+  .buyer-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .buyer-value,
+  .buyer-meta {
+    justify-self: start;
   }
 }
 
@@ -358,12 +452,12 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(135deg, #1d4ed8 0%, #4f46e5 50%, #7c3aed 100%);
+  background: linear-gradient(135deg, #0b7f3b 0%, #16914a 55%, #14a44d 100%);
   backdrop-filter: blur(16px);
   padding: 20px 32px;
   z-index: 100;
   border-top: 1px solid rgba(255,255,255,0.15);
-  box-shadow: 0 -8px 40px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 -8px 40px rgba(0, 166, 81, 0.25);
 }
 
 /* Scrollbar */
