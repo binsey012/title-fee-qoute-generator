@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef } from 'react'
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '' : 'http://localhost:3001')
+// Always use a relative path so API calls go to the same host (works on
+// Vercel, local Vite proxy, etc.). Override with VITE_API_BASE_URL if needed.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 const DEFAULT_FORM = {
   propertyLocation: '',
@@ -102,7 +104,6 @@ export function useFeeCalculator() {
    *   downPaymentPct ↔  downPayment
    */
   const handleChange = useCallback((field, value) => {
-    let nextForm
     setForm(prev => {
       let next = { ...prev, [field]: value }
 
@@ -173,10 +174,9 @@ export function useFeeCalculator() {
         next.downPaymentPct = sp > 0 ? fmtPercent((dp / sp) * 100) : ''
       }
 
-      nextForm = next
+      scheduleCalculate(next)
       return next
     })
-    scheduleCalculate(nextForm)
   }, [scheduleCalculate])
 
   const resetForm = useCallback(() => {

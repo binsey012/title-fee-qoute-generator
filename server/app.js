@@ -11,6 +11,7 @@ const app = express()
 const allowedPatterns = [
   /^http:\/\/localhost:\d+$/,
   /^https:\/\/[\w-]+\.vercel\.app$/,
+  /^https?:\/\/(www\.)?growersrealestatefl\.com$/,
 ]
 
 app.use(cors({
