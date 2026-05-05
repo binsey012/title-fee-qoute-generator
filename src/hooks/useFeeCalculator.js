@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from 'react'
 import axios from 'axios'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '' : 'http://localhost:3001')
+
 const DEFAULT_FORM = {
   propertyLocation: '',
   salesPrice: '',
@@ -35,6 +37,21 @@ function fmtPercent(num) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
+function toErrorMessage(err) {
+  const responseData = err?.response?.data
+  const rawError = responseData?.error
+
+  if (typeof rawError === 'string' && rawError.trim()) return rawError
+  if (typeof responseData === 'string' && responseData.trim()) return responseData
+  if (rawError && typeof rawError === 'object') {
+    if (typeof rawError.message === 'string' && rawError.message.trim()) return rawError.message
+    if (typeof rawError.code === 'string' && rawError.code.trim()) return rawError.code
+  }
+  if (typeof err?.message === 'string' && err.message.trim()) return err.message
+
+  return 'Calculation error. Check inputs.'
+}
+
 export function useFeeCalculator() {
   const [activeTab, setActiveTab] = useState('buyer') // buyer | seller | fees
   const [form, setForm] = useState(DEFAULT_FORM)
@@ -67,10 +84,11 @@ export function useFeeCalculator() {
           propertyLocation: nextForm.propertyLocation,
           locationData: nextForm.locationData,
         }
-        const { data } = await axios.post('/api/quote/generate', payload)
+        const { data } = await axios.post(`${API_BASE_URL}/api/quote/generate`, payload)
         setResult(data)
       } catch (err) {
-        setError(err?.response?.data?.error || 'Calculation error. Check inputs.')
+        setResult(null)
+        setError(toErrorMessage(err))
       } finally {
         setLoading(false)
       }
@@ -84,6 +102,7 @@ export function useFeeCalculator() {
    *   downPaymentPct ↔  downPayment
    */
   const handleChange = useCallback((field, value) => {
+    let nextForm
     setForm(prev => {
       let next = { ...prev, [field]: value }
 
@@ -154,9 +173,10 @@ export function useFeeCalculator() {
         next.downPaymentPct = sp > 0 ? fmtPercent((dp / sp) * 100) : ''
       }
 
-      scheduleCalculate(next)
+      nextForm = next
       return next
     })
+    scheduleCalculate(nextForm)
   }, [scheduleCalculate])
 
   const resetForm = useCallback(() => {

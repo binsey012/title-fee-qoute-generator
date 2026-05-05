@@ -143,7 +143,7 @@ function generateQuote(req, res) {
     const loanOriginationCents = isCashTransaction ? 0 : Math.round(loanAmountCents * 0.0075)
     const appraisalFeeCents = isCashTransaction ? 0 : 550_00
     const underwritingFeeCents = isCashTransaction ? 0 : 795_00
-    const homeownersInsuranceCents = Math.round(salesPriceCents * 0.0045)
+    const homeownersInsuranceCents = isCashTransaction ? 0 : Math.round(salesPriceCents * 0.0045)
     const prepaidInterestCents = isCashTransaction
       ? 0
       : Math.round((loanAmountCents * noteRate) / 365 * 15)
@@ -307,7 +307,7 @@ function generateQuote(req, res) {
         recordingFee: fmtCents(recordingFeeCents),
         transferTax: fmtCents(transferTaxCents),
         totalTitleAndEscrow: fmtCents(
-          ownersTitleCents + lendersTitleCents + escrowFeeCents + settlementFeeCents + recordingFeeCents
+          ownersTitleCents + lendersTitleCents + escrowFeeCents + settlementFeeCents + recordingFeeCents + transferTaxCents
         ),
       },
 

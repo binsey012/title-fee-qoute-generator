@@ -36,6 +36,12 @@ export default function SellerSheet({ result }) {
       <Accordion title="Seller Deductions" badge={`-$${seller.totalDeductions}`} defaultOpen={true}>
         <CalculationTable rows={deductionRows} />
       </Accordion>
+
+      <div className="glass-card" style={{ overflow: 'hidden' }}>
+        <CalculationTable rows={[
+          { label: 'Estimated Net Proceeds', value: seller.estimatedNetProceeds, highlight: true },
+        ]} />
+      </div>
     </div>
   )
 }
