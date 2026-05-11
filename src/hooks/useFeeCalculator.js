@@ -17,6 +17,7 @@ const DEFAULT_FORM = {
   annualPropertyTax: '5000',
   agentCommissionRate: '6',
   existingMortgageBalance: '',
+  concession: '',
   transactionType: 'sale_purchase_mortgage',
   locationData: {},
 }

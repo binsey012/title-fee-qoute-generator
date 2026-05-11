@@ -203,6 +203,15 @@ export default function DataEntryPanel({ form, handleChange }) {
         placeholder="0.00"
         hint="Payoff amount (seller net sheet)"
       />
+
+      {/* Seller Concession */}
+      <CurrencyInput
+        label="Seller Concession"
+        value={form.concession}
+        onChange={v => handleChange('concession', v)}
+        placeholder="0.00"
+        hint="Seller-paid buyer closing cost credit"
+      />
     </div>
   )
 }

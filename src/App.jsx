@@ -19,6 +19,11 @@ const TABS = [
 export default function App() {
   const { activeTab, setActiveTab, form, handleChange, result, loading, error, resetForm } = useFeeCalculator()
   const [showEstimateModal, setShowEstimateModal] = useState(false)
+  const [overrideTotals, setOverrideTotals] = useState({})
+
+  const handleBuyerTotal = (v) => setOverrideTotals(p => p.buyer === v ? p : { ...p, buyer: v })
+  const handleSellerTotal = (v) => setOverrideTotals(p => p.seller === v ? p : { ...p, seller: v })
+  const handleFeesTotal = (v) => setOverrideTotals(p => p.fees === v ? p : { ...p, fees: v })
 
   const handleCreateEstimate = () => {
     if (!result) return
@@ -123,15 +128,15 @@ export default function App() {
 
           {/* Right: Active Sheet */}
           <section>
-            {activeTab === 'buyer' && <BuyerSheet result={result} />}
-            {activeTab === 'seller' && <SellerSheet result={result} />}
-            {activeTab === 'fees' && <FeesSheet result={result} />}
+            {activeTab === 'buyer' && <BuyerSheet result={result} concession={form.concession} onTotalChange={handleBuyerTotal} />}
+            {activeTab === 'seller' && <SellerSheet result={result} concession={form.concession} onTotalChange={handleSellerTotal} />}
+            {activeTab === 'fees' && <FeesSheet result={result} onTotalChange={handleFeesTotal} />}
           </section>
         </div>
       </main>
 
       {/* ── Sticky Total Footer ── */}
-      <StickyTotal activeTab={activeTab} result={result} loading={loading} />
+      <StickyTotal activeTab={activeTab} result={result} loading={loading} overrideTotals={overrideTotals} />
 
       <EstimateFormModal
         open={showEstimateModal}

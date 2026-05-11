@@ -1,33 +1,53 @@
-import { useState } from 'react'
-import CalculationTable from './CalculationTable'
+﻿import { useState, useEffect } from 'react'
 import { ReceiptIcon } from './icons'
 
-const FEE_KEYS = [
-  { key: 'ownersTitleInsurance', label: "Owner's Title Insurance" },
+const FEE_DEFS = [
+  { key: 'ownersTitleInsurance',  label: "Owner's Title Insurance" },
   { key: 'lendersTitleInsurance', label: "Lender's Title Insurance" },
-  { key: 'escrowFee', label: 'Escrow / Closing Fee' },
-  { key: 'settlementFee', label: 'Settlement Fee' },
-  { key: 'recordingFee', label: 'Recording Fee' },
-  { key: 'transferTax', label: 'Transfer / Documentary Tax' },
+  { key: 'escrowFee',             label: 'Escrow / Closing Fee' },
+  { key: 'settlementFee',         label: 'Settlement Fee' },
+  { key: 'recordingFee',          label: 'Recording Fee' },
+  { key: 'transferTax',           label: 'Transfer / Documentary Tax' },
 ]
 
-export default function FeesSheet({ result }) {
-  const [enabled, setEnabled] = useState(() =>
-    Object.fromEntries(FEE_KEYS.map(f => [f.key, true]))
-  )
+function parseDollar(str) {
+  if (!str && str !== 0) return 0
+  return parseFloat(String(str).replace(/[,$]/g, '')) || 0
+}
+
+function fmtDollar(num) {
+  const n = typeof num === 'number' ? num : parseFloat(num)
+  if (isNaN(n)) return '0.00'
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function initValues(result) {
+  if (!result) return {}
+  const f = result.fees
+  return Object.fromEntries(FEE_DEFS.map(({ key }) => [key, f[key] || '0.00']))
+}
+
+export default function FeesSheet({ result, onTotalChange }) {
+  const [enabled, setEnabled]   = useState(() => Object.fromEntries(FEE_DEFS.map(f => [f.key, true])))
+  const [values, setValues]     = useState(() => initValues(result))
+
+  useEffect(() => { setValues(initValues(result)) }, [result])
 
   if (!result) return <EmptyState />
 
-  const { fees } = result
+  const toggle      = (key) => setEnabled(p => ({ ...p, [key]: !p[key] }))
+  const updateValue = (key, val) => setValues(p => ({ ...p, [key]: val }))
 
-  const toggle = (key) => setEnabled(p => ({ ...p, [key]: !p[key] }))
-
-  const activeRows = FEE_KEYS.filter(f => enabled[f.key])
-  const totalCents = activeRows.reduce((sum, f) => {
-    const val = parseFloat((fees[f.key] || '0').replace(/,/g, ''))
-    return sum + Math.round(val * 100)
+  const totalCents = FEE_DEFS.reduce((sum, { key }) => {
+    if (!enabled[key]) return sum
+    return sum + Math.round(parseDollar(values[key]) * 100)
   }, 0)
-  const totalFormatted = (totalCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })
+  const totalFormatted = fmtDollar(totalCents / 100)
+
+  // Surface total to parent
+  useEffect(() => {
+    if (onTotalChange) onTotalChange(totalFormatted)
+  }, [totalFormatted]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -35,9 +55,10 @@ export default function FeesSheet({ result }) {
 
       <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Toggle fees to include / exclude
+          Toggle and edit fees to customize the estimate
         </p>
-        {FEE_KEYS.map(({ key, label }) => (
+
+        {FEE_DEFS.map(({ key, label }) => (
           <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-glass)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Toggle checked={enabled[key]} onChange={() => toggle(key)} />
@@ -45,16 +66,37 @@ export default function FeesSheet({ result }) {
                 {label}
               </span>
             </div>
-            <span style={{
-              color: enabled[key] ? 'var(--text-secondary)' : 'var(--text-muted)',
-              fontSize: '0.875rem',
-              fontVariantNumeric: 'tabular-nums',
-              textDecoration: enabled[key] ? 'none' : 'line-through',
-            }}>
-              ${fees[key] || '0.00'}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <span style={{
+                color: enabled[key] ? 'var(--text-secondary)' : 'var(--text-muted)',
+                fontSize: '0.875rem', fontWeight: 500,
+                textDecoration: enabled[key] ? 'none' : 'line-through',
+              }}>$</span>
+              <input
+                value={values[key]}
+                onChange={e => updateValue(key, e.target.value.replace(/[^0-9.,]/g, ''))}
+                inputMode="decimal"
+                disabled={!enabled[key]}
+                style={{
+                  background: enabled[key] ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  border: enabled[key] ? '1px solid var(--border-glass)' : '1px solid transparent',
+                  borderRadius: '4px',
+                  color: enabled[key] ? 'var(--text-secondary)' : 'var(--text-muted)',
+                  fontSize: '0.875rem',
+                  fontVariantNumeric: 'tabular-nums',
+                  textDecoration: enabled[key] ? 'none' : 'line-through',
+                  width: '96px',
+                  textAlign: 'right',
+                  outline: 'none',
+                  padding: '2px 6px',
+                  cursor: enabled[key] ? 'text' : 'not-allowed',
+                  transition: 'all 0.2s',
+                }}
+              />
+            </div>
           </div>
         ))}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '12px' }}>
           <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.95rem' }}>Selected Total</span>
           <span style={{ color: 'var(--accent-blue-bright)', fontWeight: 700, fontSize: '1rem', fontVariantNumeric: 'tabular-nums' }}>
@@ -95,7 +137,7 @@ function SectionHeader() {
       </div>
       <div>
         <h3 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.05rem' }}>Title &amp; Escrow Fee Estimate</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Toggle individual fees to customize the estimate</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Toggle and manually enter fee amounts</p>
       </div>
     </div>
   )

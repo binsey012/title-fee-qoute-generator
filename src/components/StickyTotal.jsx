@@ -1,4 +1,4 @@
-export default function StickyTotal({ activeTab, result, loading }) {
+export default function StickyTotal({ activeTab, result, loading, overrideTotals = {} }) {
   const labels = {
     buyer: { label: 'Estimated Cash to Close', key: 'estimatedCashToClose', path: 'buyer' },
     seller: { label: 'Estimated Net Proceeds', key: 'estimatedNetProceeds', path: 'seller' },
@@ -6,7 +6,8 @@ export default function StickyTotal({ activeTab, result, loading }) {
   }
 
   const { label, key, path } = labels[activeTab]
-  const value = result ? result[path]?.[key] : null
+  const apiValue      = result ? result[path]?.[key] : null
+  const value         = overrideTotals[activeTab] ?? apiValue
 
   return (
     <div className="sticky-total">
