@@ -21,17 +21,30 @@ function fmtDollar(num) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function initValues(result) {
-  if (!result) return {}
-  const f = result.fees
-  return Object.fromEntries(FEE_DEFS.map(({ key }) => [key, f[key] || '0.00']))
-}
+// All fees start at zero — manual entry
+const ZERO_VALUES = Object.fromEntries(FEE_DEFS.map(({ key }) => [key, '0.00']))
 
-export default function FeesSheet({ result, onTotalChange }) {
-  const [enabled, setEnabled]   = useState(() => Object.fromEntries(FEE_DEFS.map(f => [f.key, true])))
-  const [values, setValues]     = useState(() => initValues(result))
+export default function FeesSheet({ result, onTotalChange, salesPrice }) {
+  const [enabled, setEnabled] = useState(() => Object.fromEntries(FEE_DEFS.map(f => [f.key, true])))
+  const [values, setValues]   = useState(ZERO_VALUES)
+  const [modes, setModes]     = useState(() => Object.fromEntries(FEE_DEFS.map(f => [f.key, 'dollar'])))
+  const [pcts, setPcts]       = useState(() => Object.fromEntries(FEE_DEFS.map(f => [f.key, ''])))
 
-  useEffect(() => { setValues(initValues(result)) }, [result])
+  // Recalculate pct-mode fees when salesPrice changes
+  useEffect(() => {
+    const sp = parseDollar(salesPrice)
+    if (!sp) return
+    setValues(prev => {
+      const next = { ...prev }
+      FEE_DEFS.forEach(({ key }) => {
+        if (modes[key] === 'pct' && pcts[key]) {
+          const pct = parseFloat(pcts[key]) / 100
+          if (!isNaN(pct)) next[key] = fmtDollar(pct * sp)
+        }
+      })
+      return next
+    })
+  }, [salesPrice]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── All calculations must happen before any early return (Rules of Hooks) ──
   const totalCents = FEE_DEFS.reduce((sum, { key }) => {
@@ -40,7 +53,6 @@ export default function FeesSheet({ result, onTotalChange }) {
   }, 0)
   const totalFormatted = fmtDollar(totalCents / 100)
 
-  // Surface total to parent
   useEffect(() => {
     if (result && onTotalChange) onTotalChange(totalFormatted)
   }, [totalFormatted, result]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -50,59 +62,107 @@ export default function FeesSheet({ result, onTotalChange }) {
   const toggle      = (key) => setEnabled(p => ({ ...p, [key]: !p[key] }))
   const updateValue = (key, val) => setValues(p => ({ ...p, [key]: val }))
 
+  const toggleMode = (key) => {
+    const newMode = modes[key] === 'dollar' ? 'pct' : 'dollar'
+    if (newMode === 'pct') {
+      const sp = parseDollar(salesPrice)
+      if (sp > 0) {
+        const d = parseDollar(values[key])
+        const p = (d / sp) * 100
+        setPcts(prev => ({ ...prev, [key]: p > 0 ? parseFloat(p.toFixed(4)).toString() : '' }))
+      } else {
+        setPcts(prev => ({ ...prev, [key]: '' }))
+      }
+    }
+    setModes(prev => ({ ...prev, [key]: newMode }))
+  }
+
+  const onPctChange = (key, raw) => {
+    const v = raw.replace(/[^0-9.]/g, '')
+    setPcts(prev => ({ ...prev, [key]: v }))
+    const sp = parseDollar(salesPrice)
+    if (sp > 0) {
+      const pct = parseFloat(v) / 100
+      updateValue(key, !isNaN(pct) ? fmtDollar(pct * sp) : '0.00')
+    }
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="sheet-wrap">
       <SectionHeader />
-
-      <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Toggle and edit fees to customize the estimate
-        </p>
-
-        {FEE_DEFS.map(({ key, label }) => (
-          <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-glass)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Toggle checked={enabled[key]} onChange={() => toggle(key)} />
-              <span style={{ color: enabled[key] ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.875rem', transition: 'color 0.2s' }}>
-                {label}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-              <span style={{
-                color: enabled[key] ? 'var(--text-secondary)' : 'var(--text-muted)',
-                fontSize: '0.875rem', fontWeight: 500,
-                textDecoration: enabled[key] ? 'none' : 'line-through',
-              }}>$</span>
-              <input
-                value={values[key]}
-                onChange={e => updateValue(key, e.target.value.replace(/[^0-9.,]/g, ''))}
-                inputMode="decimal"
-                disabled={!enabled[key]}
-                style={{
-                  background: enabled[key] ? 'rgba(255,255,255,0.06)' : 'transparent',
-                  border: enabled[key] ? '1px solid var(--border-glass)' : '1px solid transparent',
-                  borderRadius: '4px',
-                  color: enabled[key] ? 'var(--text-secondary)' : 'var(--text-muted)',
-                  fontSize: '0.875rem',
-                  fontVariantNumeric: 'tabular-nums',
-                  textDecoration: enabled[key] ? 'none' : 'line-through',
-                  width: '96px',
-                  textAlign: 'right',
-                  outline: 'none',
-                  padding: '2px 6px',
-                  cursor: enabled[key] ? 'text' : 'not-allowed',
-                  transition: 'all 0.2s',
-                }}
-              />
-            </div>
-          </div>
-        ))}
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '12px' }}>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.95rem' }}>Selected Total</span>
-          <span style={{ color: 'var(--accent-blue-bright)', fontWeight: 700, fontSize: '1rem', fontVariantNumeric: 'tabular-nums' }}>
-            ${totalFormatted}
+      <div className="glass-card sheet-grid">
+        <div style={{ padding: '7px 14px 4px' }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Toggle, edit, or enter % of sales price
           </span>
+        </div>
+
+        {FEE_DEFS.map(({ key, label }) => {
+          const isOn   = enabled[key]
+          const mode   = modes[key]
+          const pctVal = pcts[key]
+          return (
+            <div key={key} className="cr-row" style={{ paddingLeft: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Toggle checked={isOn} onChange={() => toggle(key)} />
+                <span className="cr-label" style={{ color: isOn ? 'var(--text-primary)' : 'var(--text-muted)', transition: 'color 0.2s' }}>
+                  {label}
+                </span>
+              </div>
+              <div className="cr-right">
+                <button
+                  className={`mode-pill${mode === 'pct' ? ' mode-pill-pct' : ''}`}
+                  onClick={() => toggleMode(key)}
+                  disabled={!isOn}
+                  title={mode === 'dollar' ? 'Switch to % of sales price' : 'Switch to flat $'}
+                  style={{ opacity: isOn ? 1 : 0.4 }}
+                >
+                  {mode === 'dollar' ? '$' : '%'}
+                </button>
+                {mode === 'dollar' ? (
+                  <>
+                    <span className="cr-sign" style={{
+                      color: isOn ? 'var(--text-secondary)' : 'var(--text-muted)',
+                      textDecoration: isOn ? 'none' : 'line-through',
+                    }}>$</span>
+                    <input
+                      className="cr-input"
+                      value={values[key]}
+                      onChange={e => updateValue(key, e.target.value.replace(/[^0-9.,]/g, ''))}
+                      inputMode="decimal"
+                      disabled={!isOn}
+                      style={{
+                        color: isOn ? 'var(--text-secondary)' : 'var(--text-muted)',
+                        textDecoration: isOn ? 'none' : 'line-through',
+                        background: isOn ? 'rgba(255,255,255,0.06)' : 'transparent',
+                        borderColor: isOn ? 'var(--border-glass)' : 'transparent',
+                        cursor: isOn ? 'text' : 'not-allowed',
+                      }}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <input
+                      className="cr-input cr-pct-input"
+                      value={pctVal}
+                      onChange={e => onPctChange(key, e.target.value)}
+                      inputMode="decimal"
+                      disabled={!isOn}
+                      placeholder="0.0"
+                      style={{ opacity: isOn ? 1 : 0.5 }}
+                    />
+                    <span className="cr-pct-sym">%</span>
+                    <span className="cr-pct-result">= ${values[key]}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )
+        })}
+
+        <div className="sheet-total-row" style={{ borderRadius: '0 0 14px 14px' }}>
+          <span className="sheet-total-label">Selected Total</span>
+          <span className="sheet-total-value">${totalFormatted}</span>
         </div>
       </div>
     </div>
@@ -114,15 +174,15 @@ function Toggle({ checked, onChange }) {
     <button
       onClick={onChange}
       style={{
-        width: '36px', height: '20px', borderRadius: '999px',
+        width: '30px', height: '17px', borderRadius: '999px',
         background: checked ? 'linear-gradient(135deg, var(--accent-brown), var(--accent-green))' : 'rgba(148,163,184,0.2)',
         border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0,
       }}
     >
       <span style={{
         position: 'absolute', top: '2px',
-        left: checked ? '18px' : '2px',
-        width: '16px', height: '16px', borderRadius: '50%',
+        left: checked ? '15px' : '2px',
+        width: '13px', height: '13px', borderRadius: '50%',
         background: 'white', transition: 'left 0.2s',
         boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
       }} />
@@ -132,13 +192,13 @@ function Toggle({ checked, onChange }) {
 
 function SectionHeader() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
-      <div className="sheet-icon-wrap">
-        <ReceiptIcon size={18} color="var(--accent-green-bright)" />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px 0 8px' }}>
+      <div className="sheet-icon-wrap" style={{ width: '28px', height: '28px' }}>
+        <ReceiptIcon size={15} color="var(--accent-green-bright)" />
       </div>
       <div>
-        <h3 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.05rem' }}>Title &amp; Escrow Fee Estimate</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Toggle and manually enter fee amounts</p>
+        <h3 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.95rem' }}>Title &amp; Escrow Fee Estimate</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>Toggle, enter flat $ or % of sales price</p>
       </div>
     </div>
   )

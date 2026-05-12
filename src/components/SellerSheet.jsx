@@ -18,29 +18,19 @@ function sumKeys(obj, keys) {
   return keys.reduce((total, k) => total + parseDollar(obj[k]), 0)
 }
 
-function initFees(result) {
-  if (!result) return {}
-  const sd = result.seller.breakdown
-  return {
-    agentCommission:       sd.agentCommission        || '0.00',
-    ownersTitleInsurance:  sd.ownersTitleInsurance   || '0.00',
-    escrowFee:             sd.escrowFee              || '0.00',
-    transferTax:           sd.transferTax            || '0.00',
-    recordingFee:          sd.recordingFee           || '0.00',
-    settlementFee:         sd.settlementFee          || '0.00',
-    existingMortgagePayoff:sd.existingMortgagePayoff || '0.00',
-    proratedTaxCredit:     sd.proratedTaxCredit      || '0.00',
-  }
+// All deduction rows start at zero — no auto-population from API
+const ZERO_FEES = {
+  agentCommission: '0.00', ownersTitleInsurance: '0.00', escrowFee: '0.00',
+  transferTax: '0.00', recordingFee: '0.00', settlementFee: '0.00',
+  existingMortgagePayoff: '0.00', proratedTaxCredit: '0.00',
 }
 
 const DEDUCTION_KEYS = ['agentCommission','ownersTitleInsurance','escrowFee','transferTax','recordingFee','settlementFee','existingMortgagePayoff','proratedTaxCredit']
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function SellerSheet({ result, concession, onTotalChange }) {
-  const [fees, setFees] = useState(() => initFees(result))
-
-  useEffect(() => { setFees(initFees(result)) }, [result])
+export default function SellerSheet({ result, concession, onTotalChange, salesPrice }) {
+  const [fees, setFees] = useState(ZERO_FEES)
 
   const update = (key, val) => setFees(prev => ({ ...prev, [key]: val }))
 
@@ -55,31 +45,28 @@ export default function SellerSheet({ result, concession, onTotalChange }) {
 
   if (!result) return <EmptyState />
 
-  const { salesPrice } = result
+  const { salesPrice: sp } = result
   const concessionAmt = parseDollar(concession)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="sheet-wrap">
       <SectionHeader title="Seller Net Sheet" subtitle="Estimated proceeds after costs" />
 
-      {/* Sale Price */}
-      <div className="glass-card" style={{ overflow: 'hidden' }}>
-        <div className="calc-row">
-          <span style={{ color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 600 }}>Sale Price</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums', minWidth: '100px', textAlign: 'right' }}>
-            ${salesPrice}
-          </span>
+      <div className="glass-card sheet-grid">
+        {/* Sale Price header row */}
+        <div className="info-row" style={{ background: 'rgba(20,164,77,0.04)' }}>
+          <span className="info-label" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Sale Price</span>
+          <span className="info-value" style={{ fontWeight: 700, color: 'var(--accent-green-dark)' }}>${sp}</span>
         </div>
-      </div>
 
-      {/* Seller Deductions */}
-      <div className="glass-card" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '12px 16px 4px', borderBottom: '1px solid var(--border-glass)' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        {/* Deductions header */}
+        <div style={{ padding: '7px 14px 3px', borderTop: '1px solid var(--border-glass)' }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Seller Deductions &nbsp;
             <span style={{ color: 'var(--red)', fontWeight: 600 }}>-${fmtDollar(totalDeductions)}</span>
           </span>
         </div>
+
         {[
           { key: 'agentCommission',        label: 'Agent Commission' },
           { key: 'ownersTitleInsurance',   label: "Owner's Title Insurance" },
@@ -87,22 +74,28 @@ export default function SellerSheet({ result, concession, onTotalChange }) {
           { key: 'transferTax',            label: 'Transfer Tax' },
           { key: 'recordingFee',           label: 'Recording Fee' },
           { key: 'settlementFee',          label: 'Settlement Fee' },
-          { key: 'existingMortgagePayoff', label: 'Existing Mortgage Payoff' },
-          { key: 'proratedTaxCredit',      label: 'Prorated Tax Credit (to Buyer)' },
+          { key: 'existingMortgagePayoff', label: 'Mortgage Payoff' },
+          { key: 'proratedTaxCredit',      label: 'Prorated Tax Credit' },
         ].map(({ key, label }) => (
-          <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent />
+          <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative salesPrice={salesPrice} />
         ))}
-        {concessionAmt > 0 && (
-          <EditableStaticRow label="Seller Concession" value={fmtDollar(concessionAmt)} />
-        )}
-        <SubtotalRow label="Total Deductions" value={totalDeductions} negative />
-      </div>
 
-      {/* Net Proceeds */}
-      <div className="glass-card" style={{ overflow: 'hidden' }}>
-        <div className="calc-row">
-          <span style={{ color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 600 }}>Estimated Net Proceeds</span>
-          <span style={{ color: netProceeds >= 0 ? 'var(--accent-green-bright)' : 'var(--red)', fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums', minWidth: '100px', textAlign: 'right' }}>
+        {concessionAmt > 0 && (
+          <div className="cr-row">
+            <span className="cr-label">Seller Concession</span>
+            <span style={{ color: 'var(--red)', fontSize: '0.8rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>-${fmtDollar(concessionAmt)}</span>
+          </div>
+        )}
+
+        <div className="subtotal-row">
+          <span className="subtotal-label">Total Deductions</span>
+          <span className="subtotal-value" style={{ color: 'var(--red)' }}>-${fmtDollar(totalDeductions)}</span>
+        </div>
+
+        {/* Net Proceeds */}
+        <div className="sheet-total-row">
+          <span className="sheet-total-label">Estimated Net Proceeds</span>
+          <span className="sheet-total-value" style={{ color: netProceeds >= 0 ? '#fff' : '#fca5a5' }}>
             ${fmtDollar(netProceeds)}
           </span>
         </div>
@@ -111,50 +104,88 @@ export default function SellerSheet({ result, concession, onTotalChange }) {
   )
 }
 
-function EditableRow({ label, value, onChange, indent, isNegative }) {
-  const color  = isNegative ? 'var(--red)' : 'var(--text-secondary)'
-  const prefix = isNegative ? '-$' : '$'
-  return (
-    <div className="calc-row" style={indent ? { paddingLeft: '28px' } : undefined}>
-      <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{label}</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-        <span style={{ color, fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap' }}>{prefix}</span>
-        <input
-          value={value}
-          onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ''))}
-          inputMode="decimal"
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid var(--border-glass)',
-            borderRadius: '4px',
-            color,
-            fontSize: '0.875rem',
-            fontVariantNumeric: 'tabular-nums',
-            width: '96px',
-            textAlign: 'right',
-            outline: 'none',
-            padding: '2px 6px',
-          }}
-        />
-      </div>
-    </div>
-  )
-}
+function EditableRow({ label, value, onChange, isNegative, salesPrice }) {
+  const [mode, setMode] = useState('dollar')
+  const [pctInput, setPctInput] = useState('')
 
-function EditableStaticRow({ label, value }) {
+  useEffect(() => {
+    if (mode !== 'pct' || !pctInput) return
+    const sp = parseDollar(salesPrice)
+    if (sp <= 0) return
+    const pct = parseFloat(pctInput) / 100
+    if (!isNaN(pct)) onChange(fmtDollar(pct * sp))
+  }, [salesPrice]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleMode = () => {
+    if (mode === 'dollar') {
+      const sp = parseDollar(salesPrice)
+      if (sp > 0) {
+        const d = parseDollar(value)
+        const p = (d / sp) * 100
+        setPctInput(p > 0 ? parseFloat(p.toFixed(4)).toString() : '')
+      } else { setPctInput('') }
+      setMode('pct')
+    } else { setMode('dollar') }
+  }
+
+  const onPctChange = (raw) => {
+    const v = raw.replace(/[^0-9.]/g, '')
+    setPctInput(v)
+    const sp = parseDollar(salesPrice)
+    if (sp > 0) {
+      const pct = parseFloat(v) / 100
+      onChange(!isNaN(pct) ? fmtDollar(pct * sp) : '0.00')
+    }
+  }
+
+  const color   = isNegative ? 'var(--red)' : 'var(--text-secondary)'
+  const signStr = isNegative ? '-$' : '$'
+
   return (
-    <div className="calc-row" style={{ paddingLeft: '28px' }}>
-      <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{label}</span>
-      <span style={{ color: 'var(--red)', fontSize: '0.875rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>-${value}</span>
+    <div className="cr-row" style={{ paddingLeft: '14px' }}>
+      <span className="cr-label">{label}</span>
+      <div className="cr-right">
+        <button
+          className={`mode-pill${mode === 'pct' ? ' mode-pill-pct' : ''}`}
+          onClick={toggleMode}
+          title={mode === 'dollar' ? 'Switch to % of sales price' : 'Switch to flat $'}
+        >
+          {mode === 'dollar' ? '$' : '%'}
+        </button>
+        {mode === 'dollar' ? (
+          <>
+            <span className="cr-sign" style={{ color }}>{signStr}</span>
+            <input
+              className="cr-input"
+              value={value}
+              onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ''))}
+              inputMode="decimal"
+              style={{ color }}
+            />
+          </>
+        ) : (
+          <>
+            <input
+              className="cr-input cr-pct-input"
+              value={pctInput}
+              onChange={e => onPctChange(e.target.value)}
+              inputMode="decimal"
+              placeholder="0.0"
+            />
+            <span className="cr-pct-sym">%</span>
+            <span className="cr-pct-result" style={{ color }}>= {signStr}{value}</span>
+          </>
+        )}
+      </div>
     </div>
   )
 }
 
 function SubtotalRow({ label, value, negative }) {
   return (
-    <div className="calc-row subtotal">
-      <span style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', fontWeight: 600 }}>{label}</span>
-      <span style={{ color: negative ? 'var(--red)' : 'var(--text-primary)', fontWeight: 700, fontSize: '1rem', fontVariantNumeric: 'tabular-nums', minWidth: '100px', textAlign: 'right' }}>
+    <div className="subtotal-row">
+      <span className="subtotal-label">{label}</span>
+      <span className="subtotal-value" style={{ color: negative ? 'var(--red)' : 'var(--text-primary)' }}>
         {negative ? '-' : ''}${fmtDollar(value)}
       </span>
     </div>
@@ -163,13 +194,13 @@ function SubtotalRow({ label, value, negative }) {
 
 function SectionHeader({ title, subtitle }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
-      <div className="sheet-icon-wrap">
-        <WalletIcon size={18} color="var(--accent-green-bright)" />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px 0 8px' }}>
+      <div className="sheet-icon-wrap" style={{ width: '28px', height: '28px' }}>
+        <WalletIcon size={15} color="var(--accent-green-bright)" />
       </div>
       <div>
-        <h3 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.05rem' }}>{title}</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{subtitle}</p>
+        <h3 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.95rem' }}>{title}</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>{subtitle}</p>
       </div>
     </div>
   )

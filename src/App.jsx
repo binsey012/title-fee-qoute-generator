@@ -4,7 +4,6 @@ import DataEntryPanel from './components/DataEntryPanel'
 import BuyerSheet from './components/BuyerSheet'
 import SellerSheet from './components/SellerSheet'
 import FeesSheet from './components/FeesSheet'
-import StickyTotal from './components/StickyTotal'
 import EstimateFormModal from './components/EstimateFormModal'
 import { exportToPDF } from './utils/exportPDF'
 import { AlertIcon, FileIcon, RefreshIcon } from './components/icons'
@@ -21,122 +20,85 @@ export default function App() {
   const [showEstimateModal, setShowEstimateModal] = useState(false)
   const [overrideTotals, setOverrideTotals] = useState({})
 
-  const handleBuyerTotal = (v) => setOverrideTotals(p => p.buyer === v ? p : { ...p, buyer: v })
+  const handleBuyerTotal  = (v) => setOverrideTotals(p => p.buyer  === v ? p : { ...p, buyer: v })
   const handleSellerTotal = (v) => setOverrideTotals(p => p.seller === v ? p : { ...p, seller: v })
-  const handleFeesTotal = (v) => setOverrideTotals(p => p.fees === v ? p : { ...p, fees: v })
+  const handleFeesTotal   = (v) => setOverrideTotals(p => p.fees   === v ? p : { ...p, fees: v })
 
-  const handleCreateEstimate = () => {
-    if (!result) return
-    setShowEstimateModal(true)
-  }
-
-  const handleEstimateSubmit = (meta) => {
-    exportToPDF(result, form, meta)
-  }
+  const handleCreateEstimate = () => { if (result) setShowEstimateModal(true) }
+  const handleEstimateSubmit = (meta) => { exportToPDF(result, form, meta) }
 
   return (
-    <div className="app-shell" style={{ minHeight: '100vh', paddingBottom: '100px' }}>
-      {/* ── Top Header ── */}
-      <header className="app-header" style={{
-        borderBottom: '1px solid var(--border-glass)',
-        background: 'rgba(255, 255, 255, 0.9)',
-        backdropFilter: 'blur(20px)',
-        position: 'sticky', top: 0, zIndex: 50,
-      }}>
-        <div className="app-header-inner" style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div className="brand-wrap" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <div className="app-shell">
+      {/* ── Compact Header ── */}
+      <header className="app-header">
+        <div className="app-header-inner">
+          <div className="brand-wrap">
             <div className="brand-logo-box">
               <img src={companyLogo} alt="Growers Real Estate" className="brand-logo" />
             </div>
             <div>
-              <h1 style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '1rem', lineHeight: 1.2 }}>
+              <h1 style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.92rem', lineHeight: 1.2 }}>
                 Title &amp; Fee Quote Generator
               </h1>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>Professional Closing Cost Estimator</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.68rem' }}>Professional Closing Cost Estimator</p>
             </div>
           </div>
 
-          <div className="header-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {error && (
               <span style={{
-                color: 'var(--red)', fontSize: '0.78rem', background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '6px 12px',
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                color: 'var(--red)', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.2)', borderRadius: '7px', padding: '5px 10px',
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
               }}>
-                <AlertIcon color="var(--red)" />
-                {error}
+                <AlertIcon color="var(--red)" />{error}
               </span>
             )}
-            <button
-              className="no-print"
-              onClick={resetForm}
-              style={{
-                background: 'rgba(148,163,184,0.08)', border: '1px solid var(--border-glass)',
-                borderRadius: '8px', color: 'var(--text-secondary)', padding: '8px 16px',
-                cursor: 'pointer', fontSize: '0.82rem', transition: 'all 0.2s',
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-              }}
-            >
-              <RefreshIcon color="var(--text-secondary)" />
-              Reset
+            {loading && (
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <CalcSpinner /> Calculating…
+              </span>
+            )}
+            <button className="no-print hdr-btn" onClick={resetForm}>
+              <RefreshIcon color="var(--text-secondary)" /> Reset
             </button>
             <button
+              className="no-print hdr-btn hdr-btn-primary"
               onClick={handleCreateEstimate}
               disabled={!result}
-              style={{
-                background: result
-                  ? 'linear-gradient(135deg, var(--accent-green-dark), var(--accent-green))'
-                  : 'rgba(148,163,184,0.1)',
-                border: 'none', borderRadius: '8px',
-                color: result ? '#fff' : 'var(--text-muted)',
-                padding: '8px 20px', cursor: result ? 'pointer' : 'not-allowed',
-                fontSize: '0.82rem', fontWeight: 600,
-                boxShadow: result ? '0 6px 18px rgba(20, 164, 77, 0.28)' : 'none',
-                transition: 'all 0.2s',
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-              }}
+              style={{ opacity: result ? 1 : 0.4, cursor: result ? 'pointer' : 'not-allowed' }}
             >
-              <FileIcon color={result ? '#fff' : 'var(--text-muted)'} />
-              Create Estimate
+              <FileIcon color="#fff" /> Create Estimate
             </button>
           </div>
         </div>
       </header>
 
-      {/* ── Segmented Control ── */}
-      <div className="app-section" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 24px 0' }}>
-        <div className="seg-control">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              className={`seg-btn${activeTab === tab.id ? ' active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      {/* ── Content Area ── */}
+      <div className="app-content">
+        {/* Left: Data Entry Panel */}
+        <aside className="app-sidebar">
+          <div className="seg-control" style={{ marginBottom: '12px' }}>
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                className={`seg-btn${activeTab === tab.id ? ' active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <DataEntryPanel form={form} handleChange={handleChange} />
+        </aside>
+
+        {/* Right: Active Sheet */}
+        <main className="app-main">
+          {activeTab === 'buyer'  && <BuyerSheet  result={result} concession={form.concession} onTotalChange={handleBuyerTotal}  salesPrice={form.salesPrice} />}
+          {activeTab === 'seller' && <SellerSheet result={result} concession={form.concession} onTotalChange={handleSellerTotal} salesPrice={form.salesPrice} />}
+          {activeTab === 'fees'   && <FeesSheet   result={result}                               onTotalChange={handleFeesTotal}   salesPrice={form.salesPrice} />}
+        </main>
       </div>
-
-      {/* ── Main Grid ── */}
-      <main className="app-section" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
-        <div className="app-main-grid" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '24px' }}>
-          {/* Left: Data Entry */}
-          <aside>
-            <DataEntryPanel form={form} handleChange={handleChange} />
-          </aside>
-
-          {/* Right: Active Sheet */}
-          <section>
-            {activeTab === 'buyer' && <BuyerSheet result={result} concession={form.concession} onTotalChange={handleBuyerTotal} />}
-            {activeTab === 'seller' && <SellerSheet result={result} concession={form.concession} onTotalChange={handleSellerTotal} />}
-            {activeTab === 'fees' && <FeesSheet result={result} onTotalChange={handleFeesTotal} />}
-          </section>
-        </div>
-      </main>
-
-      {/* ── Sticky Total Footer ── */}
-      <StickyTotal activeTab={activeTab} result={result} loading={loading} overrideTotals={overrideTotals} />
 
       <EstimateFormModal
         open={showEstimateModal}
@@ -144,5 +106,15 @@ export default function App() {
         onSubmit={handleEstimateSubmit}
       />
     </div>
+  )
+}
+
+function CalcSpinner() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+      style={{ animation: 'spin 0.8s linear infinite' }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+    </svg>
   )
 }

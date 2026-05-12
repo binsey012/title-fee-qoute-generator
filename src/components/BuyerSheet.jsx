@@ -18,36 +18,17 @@ function sumKeys(obj, keys) {
   return keys.reduce((total, k) => total + parseDollar(obj[k]), 0)
 }
 
-function initFees(result) {
-  if (!result) return {}
-  const bd = result.buyer.breakdown
-  const credits = result.buyer.creditsBreakdown || {}
-  return {
-    loanOrigination:         bd.loanOrigination         || '0.00',
-    appraisalFee:            bd.appraisalFee            || '0.00',
-    underwritingFee:         bd.underwritingFee         || '0.00',
-    prepaidInterest:         bd.prepaidInterest         || '0.00',
-    homeownersInsurance:     bd.homeownersInsurance     || '0.00',
-    initialEscrowDeposit:    bd.initialEscrowDeposit    || '0.00',
-    upfrontMip:              bd.upfrontMip              || '0.00',
-    vaFundingFee:            bd.vaFundingFee            || '0.00',
-    taxServiceFee:           bd.taxServiceFee           || '0.00',
-    taxReserve:              bd.taxReserve              || '0.00',
-    ownersTitleInsurance:    bd.ownersTitleInsurance    || '0.00',
-    lendersTitleInsurance:   bd.lendersTitleInsurance   || '0.00',
-    escrowFee:               bd.escrowFee               || '0.00',
-    settlementFee:           bd.settlementFee           || '0.00',
-    closingProtectionLetter: bd.closingProtectionLetter || '0.00',
-    inspectionFee:           bd.inspectionFee           || '0.00',
-    surveyFee:               bd.surveyFee               || '0.00',
-    hoaEstoppelFee:          bd.hoaEstoppelFee          || '0.00',
-    earnestMoneyDeposit:     credits.earnestMoneyDeposit  || '0.00',
-    proratedTaxCredit:       credits.proratedTaxCredit    || '0.00',
-    lenderCredit:            credits.lenderCredit         || '0.00',
-    deedRecording:           bd.deedRecording           || '0.00',
-    mortgageRecording:       bd.mortgageRecording       || '0.00',
-    transferTaxBuyerSide:    bd.transferTaxBuyerSide    || '0.00',
-  }
+// All manual-entry sections start at zero — no auto-population from API
+const ZERO_FEES = {
+  loanOrigination: '0.00', appraisalFee: '0.00', underwritingFee: '0.00',
+  prepaidInterest: '0.00', homeownersInsurance: '0.00', initialEscrowDeposit: '0.00',
+  upfrontMip: '0.00', vaFundingFee: '0.00',
+  taxServiceFee: '0.00', taxReserve: '0.00',
+  ownersTitleInsurance: '0.00', lendersTitleInsurance: '0.00', escrowFee: '0.00',
+  settlementFee: '0.00', closingProtectionLetter: '0.00',
+  inspectionFee: '0.00', surveyFee: '0.00', hoaEstoppelFee: '0.00',
+  earnestMoneyDeposit: '0.00', proratedTaxCredit: '0.00', lenderCredit: '0.00',
+  deedRecording: '0.00', mortgageRecording: '0.00', transferTaxBuyerSide: '0.00',
 }
 
 const LOANS_KEYS     = ['loanOrigination','appraisalFee','underwritingFee','prepaidInterest','homeownersInsurance','initialEscrowDeposit','upfrontMip','vaFundingFee']
@@ -59,11 +40,9 @@ const RECORDING_KEYS = ['deedRecording','mortgageRecording','transferTaxBuyerSid
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function BuyerSheet({ result, concession, onTotalChange }) {
+export default function BuyerSheet({ result, concession, onTotalChange, salesPrice }) {
   const [open, setOpen] = useState({ loans: false, taxes: false, title: false, credits: false, recording: false })
-  const [fees, setFees] = useState(() => initFees(result))
-
-  useEffect(() => { setFees(initFees(result)) }, [result])
+  const [fees, setFees] = useState(ZERO_FEES)
 
   const update = (key, val) => setFees(prev => ({ ...prev, [key]: val }))
   const toggle = (key) => setOpen(prev => ({ ...prev, [key]: !prev[key] }))
@@ -84,26 +63,25 @@ export default function BuyerSheet({ result, concession, onTotalChange }) {
 
   if (!result) return <EmptyState />
 
-  const { salesPrice, loanAmount, downPayment, earnestMoneyDeposit, propertyLocation, closingDate, transactionType, loanType } = result
-
+  const { loanAmount, downPayment, earnestMoneyDeposit, propertyLocation, closingDate, transactionType, loanType } = result
+  const sp = result.salesPrice
   const concessionAmt = parseDollar(concession)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="sheet-wrap">
       <SectionHeader title="Buyer Close Sheet" subtitle="Estimated funds required to close" />
-      <div className="glass-card buyer-sheet-grid" style={{ overflow: 'hidden' }}>
+      <div className="glass-card sheet-grid">
 
         <InfoRow label="Property Location"     value={propertyLocation || 'Not selected'} />
-        <InfoRow label="Estimated Close Date"  value={closingDate} />
-        <InfoRow label="Transaction Type"      value={transactionType === 'sale_purchase_cash' ? 'Sale Purchase with Cash' : 'Sale Purchase with Mortgage'} />
-        <InfoRow label="Sales Price"           value={`$${salesPrice}`} />
-        <InfoRow label="Loan Type"             value={loanType?.toUpperCase()} />
-        <InfoRow label="Earnest Money Deposit" value={`$${earnestMoneyDeposit || '0.00'}`} />
-        <InfoRow label="Loan Amount"           value={`$${loanAmount}`} />
+        <InfoRow label="Close Date"            value={closingDate} />
+        <InfoRow label="Transaction"           value={transactionType === 'sale_purchase_cash' ? 'Cash Purchase' : 'Mortgage Purchase'} />
+        <InfoRow label="Sales Price"           value={`$${sp}`} />
+        <InfoRow label="Loan Type / Amount"    value={`${loanType?.toUpperCase()} · $${loanAmount}`} />
+        <InfoRow label="Earnest Money"         value={`$${earnestMoneyDeposit || '0.00'}`} />
         <InfoRow label="Down Payment">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="buyer-value">${downPayment}</span>
-            <span className="buyer-meta">{result.downPaymentPct}%</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="info-value">${downPayment}</span>
+            <span className="badge-pill">{result.downPaymentPct}%</span>
           </div>
         </InfoRow>
 
@@ -118,9 +96,9 @@ export default function BuyerSheet({ result, concession, onTotalChange }) {
             { key: 'upfrontMip',           label: 'Upfront MIP (FHA)' },
             { key: 'vaFundingFee',         label: 'VA Funding Fee' },
           ].map(({ key, label }) => (
-            <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent />
+            <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent salesPrice={salesPrice} />
           ))}
-          <SubtotalRow label="Loans & Prepaids Subtotal" value={loansTotal} negative />
+          <SubtotalRow label="Loans & Prepaids" value={loansTotal} negative />
         </AccordionRow>
 
         <AccordionRow label="Property Taxes" value={`$${fmtDollar(taxesTotal)}`} isOpen={open.taxes} onToggle={() => toggle('taxes')}>
@@ -128,55 +106,55 @@ export default function BuyerSheet({ result, concession, onTotalChange }) {
             { key: 'taxServiceFee', label: 'Tax Service Fee' },
             { key: 'taxReserve',    label: 'Tax Reserve Escrow' },
           ].map(({ key, label }) => (
-            <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent />
+            <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent salesPrice={salesPrice} />
           ))}
-          <SubtotalRow label="Tax Section Subtotal" value={taxesTotal} negative />
+          <SubtotalRow label="Tax Section" value={taxesTotal} negative />
         </AccordionRow>
 
         <AccordionRow label="Title & Escrow" value={`$${fmtDollar(titleTotal)}`} isOpen={open.title} onToggle={() => toggle('title')}>
           {[
-            { key: 'ownersTitleInsurance',    label: "Owner's Title Insurance" },
-            { key: 'lendersTitleInsurance',   label: "Lender's Title Insurance" },
+            { key: 'ownersTitleInsurance',    label: "Owner's Title Ins." },
+            { key: 'lendersTitleInsurance',   label: "Lender's Title Ins." },
             { key: 'escrowFee',               label: 'Escrow Fee' },
             { key: 'settlementFee',           label: 'Settlement Fee' },
             { key: 'closingProtectionLetter', label: 'Closing Protection Letter' },
           ].map(({ key, label }) => (
-            <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent />
+            <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent salesPrice={salesPrice} />
           ))}
-          <SubtotalRow label="Title & Escrow Subtotal" value={titleTotal} negative />
+          <SubtotalRow label="Title & Escrow" value={titleTotal} negative />
         </AccordionRow>
 
-        <AccordionRow label="Closing Costs and Credits" value={`$${fmtDollar(costsTotal)}`} isOpen={open.credits} onToggle={() => toggle('credits')}>
+        <AccordionRow label="Closing Costs & Credits" value={`$${fmtDollar(costsTotal - creditsTotal)}`} isOpen={open.credits} onToggle={() => toggle('credits')}>
           {[
             { key: 'inspectionFee',  label: 'Inspection Fee' },
             { key: 'surveyFee',      label: 'Survey Fee' },
             { key: 'hoaEstoppelFee', label: 'HOA Estoppel Fee' },
           ].map(({ key, label }) => (
-            <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent />
+            <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent salesPrice={salesPrice} />
           ))}
-          <SubtotalRow label="Section Subtotal" value={costsTotal} negative />
-          <EditableRow label="Earnest Money Credit" value={fees.earnestMoneyDeposit} onChange={v => update('earnestMoneyDeposit', v)} isCredit indent />
-          <EditableRow label="Tax Proration Credit" value={fees.proratedTaxCredit}   onChange={v => update('proratedTaxCredit', v)}   isCredit indent />
-          <EditableRow label="Lender Credit"        value={fees.lenderCredit}        onChange={v => update('lenderCredit', v)}        isCredit indent />
+          <SubtotalRow label="Costs Subtotal" value={costsTotal} negative />
+          <EditableRow label="Earnest Money Credit" value={fees.earnestMoneyDeposit} onChange={v => update('earnestMoneyDeposit', v)} isCredit indent salesPrice={salesPrice} />
+          <EditableRow label="Tax Proration Credit" value={fees.proratedTaxCredit}   onChange={v => update('proratedTaxCredit', v)}   isCredit indent salesPrice={salesPrice} />
+          <EditableRow label="Lender Credit"        value={fees.lenderCredit}        onChange={v => update('lenderCredit', v)}        isCredit indent salesPrice={salesPrice} />
           {concessionAmt > 0 && (
             <StaticCreditRow label="Seller Concession" value={fmtDollar(concessionAmt)} />
           )}
         </AccordionRow>
 
-        <AccordionRow label="Recording Fees and Taxes" value={`$${fmtDollar(recordingTotal)}`} isOpen={open.recording} onToggle={() => toggle('recording')}>
+        <AccordionRow label="Recording Fees & Taxes" value={`$${fmtDollar(recordingTotal)}`} isOpen={open.recording} onToggle={() => toggle('recording')}>
           {[
             { key: 'deedRecording',        label: 'Deed Recording' },
-            { key: 'mortgageRecording',    label: 'Mortgage Recording' },
-            { key: 'transferTaxBuyerSide', label: 'Transfer Taxes' },
+            { key: 'mortgageRecording',     label: 'Mortgage Recording' },
+            { key: 'transferTaxBuyerSide',  label: 'Transfer Taxes' },
           ].map(({ key, label }) => (
-            <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent />
+            <EditableRow key={key} label={label} value={fees[key]} onChange={v => update(key, v)} isNegative indent salesPrice={salesPrice} />
           ))}
-          <SubtotalRow label="Recording and Taxes Subtotal" value={recordingTotal} negative />
+          <SubtotalRow label="Recording & Taxes" value={recordingTotal} negative />
         </AccordionRow>
 
-        <div className="buyer-total-row">
-          <span className="buyer-total-label">Estimated Cash to Close</span>
-          <span className="buyer-total-value">${fmtDollar(cashToClose)}</span>
+        <div className="sheet-total-row">
+          <span className="sheet-total-label">Estimated Cash to Close</span>
+          <span className="sheet-total-value">${fmtDollar(cashToClose)}</span>
         </div>
       </div>
     </div>
@@ -185,53 +163,101 @@ export default function BuyerSheet({ result, concession, onTotalChange }) {
 
 function InfoRow({ label, value, children }) {
   return (
-    <div className="buyer-row buyer-row-static">
-      <span className="buyer-label">{label}</span>
-      {children ? children : <span className="buyer-value">{value}</span>}
+    <div className="info-row">
+      <span className="info-label">{label}</span>
+      {children ? children : <span className="info-value">{value}</span>}
     </div>
   )
 }
 
 function AccordionRow({ label, value, isOpen, onToggle, children }) {
   return (
-    <div className="buyer-row-wrap">
-      <button className="buyer-row buyer-row-btn" onClick={onToggle}>
-        <span className="buyer-label">{label}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span className="buyer-value">{value}</span>
-          <ChevronIcon size={16} color="#94a3b8" open={isOpen} />
+    <div className="acc-wrap">
+      <button className="acc-header" onClick={onToggle}>
+        <span className="acc-label">{label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="acc-value">{value}</span>
+          <ChevronIcon size={14} color="#94a3b8" open={isOpen} />
         </div>
       </button>
-      {isOpen && <div className="buyer-row-content">{children}</div>}
+      {isOpen && <div className="acc-body">{children}</div>}
     </div>
   )
 }
 
-function EditableRow({ label, value, onChange, indent, isNegative, isCredit }) {
-  const color  = isNegative ? 'var(--red)' : isCredit ? 'var(--green)' : 'var(--text-secondary)'
-  const prefix = isNegative ? '-$' : isCredit ? '+$' : '$'
+function EditableRow({ label, value, onChange, indent, isNegative, isCredit, salesPrice }) {
+  const [mode, setMode] = useState('dollar')
+  const [pctInput, setPctInput] = useState('')
+
+  // Recalculate dollar when salesPrice changes while in pct mode
+  useEffect(() => {
+    if (mode !== 'pct' || !pctInput) return
+    const sp = parseDollar(salesPrice)
+    if (sp <= 0) return
+    const pct = parseFloat(pctInput) / 100
+    if (!isNaN(pct)) onChange(fmtDollar(pct * sp))
+  }, [salesPrice]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleMode = () => {
+    if (mode === 'dollar') {
+      const sp = parseDollar(salesPrice)
+      if (sp > 0) {
+        const d = parseDollar(value)
+        const p = (d / sp) * 100
+        setPctInput(p > 0 ? parseFloat(p.toFixed(4)).toString() : '')
+      } else { setPctInput('') }
+      setMode('pct')
+    } else { setMode('dollar') }
+  }
+
+  const onPctChange = (raw) => {
+    const v = raw.replace(/[^0-9.]/g, '')
+    setPctInput(v)
+    const sp = parseDollar(salesPrice)
+    if (sp > 0) {
+      const pct = parseFloat(v) / 100
+      onChange(!isNaN(pct) ? fmtDollar(pct * sp) : '0.00')
+    }
+  }
+
+  const color    = isNegative ? 'var(--red)' : isCredit ? 'var(--green)' : 'var(--text-secondary)'
+  const signStr  = isNegative ? '-$' : isCredit ? '+$' : '$'
+
   return (
-    <div className="calc-row" style={indent ? { paddingLeft: '28px' } : undefined}>
-      <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{label}</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-        <span style={{ color, fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap' }}>{prefix}</span>
-        <input
-          value={value}
-          onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ''))}
-          inputMode="decimal"
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid var(--border-glass)',
-            borderRadius: '4px',
-            color,
-            fontSize: '0.875rem',
-            fontVariantNumeric: 'tabular-nums',
-            width: '96px',
-            textAlign: 'right',
-            outline: 'none',
-            padding: '2px 6px',
-          }}
-        />
+    <div className="cr-row" style={indent ? { paddingLeft: '20px' } : undefined}>
+      <span className="cr-label">{label}</span>
+      <div className="cr-right">
+        <button
+          className={`mode-pill${mode === 'pct' ? ' mode-pill-pct' : ''}`}
+          onClick={toggleMode}
+          title={mode === 'dollar' ? 'Switch to % of sales price' : 'Switch to flat $'}
+        >
+          {mode === 'dollar' ? '$' : '%'}
+        </button>
+        {mode === 'dollar' ? (
+          <>
+            <span className="cr-sign" style={{ color }}>{signStr}</span>
+            <input
+              className="cr-input"
+              value={value}
+              onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ''))}
+              inputMode="decimal"
+              style={{ color }}
+            />
+          </>
+        ) : (
+          <>
+            <input
+              className="cr-input cr-pct-input"
+              value={pctInput}
+              onChange={e => onPctChange(e.target.value)}
+              inputMode="decimal"
+              placeholder="0.0"
+            />
+            <span className="cr-pct-sym">%</span>
+            <span className="cr-pct-result" style={{ color }}>= {signStr}{value}</span>
+          </>
+        )}
       </div>
     </div>
   )
@@ -239,9 +265,9 @@ function EditableRow({ label, value, onChange, indent, isNegative, isCredit }) {
 
 function SubtotalRow({ label, value, negative }) {
   return (
-    <div className="calc-row subtotal">
-      <span style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', fontWeight: 600 }}>{label}</span>
-      <span style={{ color: negative ? 'var(--red)' : 'var(--text-primary)', fontWeight: 700, fontSize: '1rem', fontVariantNumeric: 'tabular-nums', minWidth: '100px', textAlign: 'right' }}>
+    <div className="subtotal-row">
+      <span className="subtotal-label">{label}</span>
+      <span className="subtotal-value" style={{ color: negative ? 'var(--red)' : 'var(--text-primary)' }}>
         {negative ? '-' : ''}${fmtDollar(value)}
       </span>
     </div>
@@ -250,22 +276,22 @@ function SubtotalRow({ label, value, negative }) {
 
 function StaticCreditRow({ label, value }) {
   return (
-    <div className="calc-row" style={{ paddingLeft: '28px' }}>
-      <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{label}</span>
-      <span style={{ color: 'var(--green)', fontSize: '0.875rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>+${value}</span>
+    <div className="cr-row" style={{ paddingLeft: '20px' }}>
+      <span className="cr-label">{label}</span>
+      <span style={{ color: 'var(--green)', fontSize: '0.8rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>+${value}</span>
     </div>
   )
 }
 
 function SectionHeader({ title, subtitle }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
-      <div className="sheet-icon-wrap">
-        <BuildingIcon size={18} color="var(--accent-green-bright)" />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px 0 8px' }}>
+      <div className="sheet-icon-wrap" style={{ width: '28px', height: '28px' }}>
+        <BuildingIcon size={15} color="var(--accent-green-bright)" />
       </div>
       <div>
-        <h3 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.05rem' }}>{title}</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{subtitle}</p>
+        <h3 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.95rem' }}>{title}</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>{subtitle}</p>
       </div>
     </div>
   )
