@@ -18,7 +18,6 @@ function sumKeys(obj, keys) {
   return keys.reduce((total, k) => total + parseDollar(obj[k]), 0)
 }
 
-// All deduction rows start at zero — no auto-population from API
 const ZERO_FEES = {
   agentCommission: '0.00', ownersTitleInsurance: '0.00', escrowFee: '0.00',
   transferTax: '0.00', recordingFee: '0.00', settlementFee: '0.00',
@@ -33,6 +32,13 @@ export default function SellerSheet({ result, concession, onTotalChange, salesPr
   const [fees, setFees] = useState(ZERO_FEES)
 
   const update = (key, val) => setFees(prev => ({ ...prev, [key]: val }))
+
+  // Populate fees from API result whenever it changes
+  useEffect(() => {
+    if (result?.seller?.breakdown) {
+      setFees(prev => ({ ...prev, ...result.seller.breakdown }))
+    }
+  }, [result])
 
   // ── All calculations must happen before any early return (Rules of Hooks) ──
   const totalDeductions = sumKeys(fees, DEDUCTION_KEYS) + parseDollar(concession)
