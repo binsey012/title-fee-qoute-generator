@@ -33,11 +33,7 @@ export default function FeesSheet({ result, onTotalChange }) {
 
   useEffect(() => { setValues(initValues(result)) }, [result])
 
-  if (!result) return <EmptyState />
-
-  const toggle      = (key) => setEnabled(p => ({ ...p, [key]: !p[key] }))
-  const updateValue = (key, val) => setValues(p => ({ ...p, [key]: val }))
-
+  // ── All calculations must happen before any early return (Rules of Hooks) ──
   const totalCents = FEE_DEFS.reduce((sum, { key }) => {
     if (!enabled[key]) return sum
     return sum + Math.round(parseDollar(values[key]) * 100)
@@ -46,8 +42,13 @@ export default function FeesSheet({ result, onTotalChange }) {
 
   // Surface total to parent
   useEffect(() => {
-    if (onTotalChange) onTotalChange(totalFormatted)
-  }, [totalFormatted]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (result && onTotalChange) onTotalChange(totalFormatted)
+  }, [totalFormatted, result]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!result) return <EmptyState />
+
+  const toggle      = (key) => setEnabled(p => ({ ...p, [key]: !p[key] }))
+  const updateValue = (key, val) => setValues(p => ({ ...p, [key]: val }))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

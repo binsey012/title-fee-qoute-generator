@@ -44,17 +44,18 @@ export default function SellerSheet({ result, concession, onTotalChange }) {
 
   const update = (key, val) => setFees(prev => ({ ...prev, [key]: val }))
 
-  if (!result) return <EmptyState />
-
-  const { salesPrice } = result
-  const salesPriceAmt   = parseDollar(salesPrice)
+  // ── All calculations must happen before any early return (Rules of Hooks) ──
   const totalDeductions = sumKeys(fees, DEDUCTION_KEYS) + parseDollar(concession)
+  const salesPriceAmt   = parseDollar(result?.salesPrice)
   const netProceeds     = salesPriceAmt - totalDeductions
 
   useEffect(() => {
-    if (onTotalChange) onTotalChange(fmtDollar(netProceeds))
-  }, [netProceeds]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (result && onTotalChange) onTotalChange(fmtDollar(netProceeds))
+  }, [netProceeds, result]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (!result) return <EmptyState />
+
+  const { salesPrice } = result
   const concessionAmt = parseDollar(concession)
 
   return (

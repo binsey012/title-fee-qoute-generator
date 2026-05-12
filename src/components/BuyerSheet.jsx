@@ -68,22 +68,23 @@ export default function BuyerSheet({ result, concession, onTotalChange }) {
   const update = (key, val) => setFees(prev => ({ ...prev, [key]: val }))
   const toggle = (key) => setOpen(prev => ({ ...prev, [key]: !prev[key] }))
 
-  if (!result) return <EmptyState />
-
-  const { salesPrice, loanAmount, downPayment, earnestMoneyDeposit, propertyLocation, closingDate, transactionType, loanType } = result
-
+  // ── All calculations must happen before any early return (Rules of Hooks) ──
   const loansTotal     = sumKeys(fees, LOANS_KEYS)
   const taxesTotal     = sumKeys(fees, TAXES_KEYS)
   const titleTotal     = sumKeys(fees, TITLE_KEYS)
   const costsTotal     = sumKeys(fees, COSTS_KEYS)
   const creditsTotal   = sumKeys(fees, CREDITS_KEYS) + parseDollar(concession)
   const recordingTotal = sumKeys(fees, RECORDING_KEYS)
-  const downPaymentAmt = parseDollar(downPayment)
+  const downPaymentAmt = parseDollar(result?.downPayment)
   const cashToClose    = downPaymentAmt + loansTotal + taxesTotal + titleTotal + costsTotal + recordingTotal - creditsTotal
 
   useEffect(() => {
-    if (onTotalChange) onTotalChange(fmtDollar(cashToClose))
-  }, [cashToClose]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (result && onTotalChange) onTotalChange(fmtDollar(cashToClose))
+  }, [cashToClose, result]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!result) return <EmptyState />
+
+  const { salesPrice, loanAmount, downPayment, earnestMoneyDeposit, propertyLocation, closingDate, transactionType, loanType } = result
 
   const concessionAmt = parseDollar(concession)
 
